@@ -33,10 +33,39 @@
              (str "Hello " (:name (:params req))))})
 
 
+; my people-collection mutable collection vector
+; An Atom in Clojure is a bit like a supercharged variable with some amazing properties
+(def people-collection (atom []))
+;Collection Helper functions to add a new person
+(defn addperson [firstname surname]
+  ; swap! is how we safely add value to an atom
+  (swap! people-collection conj {:firstname (str/capitalize firstname) :surname (str/capitalize surname)}))
+; Example JSON objects
+(addperson "Functional" "Human")
+(addperson "Micky" "Mouse")
+; Return List of People
+(defn people-handler [req]
+  {:status  200
+   :headers {"Content-Type" "text/json"}
+   :body    (str (json/write-str @people-collection))})
+
+
+; Get the parameter specified by pname from :params object in req
+(defn getparameter [req pname] (get (:params req) pname))
+; Add a new person into the people-collection
+(defn addperson-handler [req]
+  {:status  200
+   :headers {"Content-Type" "text/json"}
+   :body    (-> (let [p (partial getparameter req)]
+                  (str (json/write-str (addperson (p :firstname) (p :surname))))))})
+
+
 (defroutes app-routes
   (GET "/" [] simple-body-page)
   (GET "/request" [] request-example)
   (GET "/hello" [] hello-name)
+  (GET "/people" [] people-handler)
+  (GET "/people/add" [] addperson-handler) ; POST is possible, but no query strings
   (route/not-found "Error, page not found!"))
 
 
